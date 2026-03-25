@@ -1,0 +1,16 @@
+{
+  "name": "PantryGo",
+  "short_name": "PantryGo",
+  "description": "家庭の食材・日用品管理アプリ",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f9fafb",
+  "theme_color": "#10b981",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

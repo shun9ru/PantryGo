@@ -68,7 +68,7 @@ export function InventoryPage() {
   ) => {
     const newQty = Math.max(0, current + delta);
     await updateInventoryQuantity(productId, newQty, minThreshold);
-    if (householdId) await fetchInventory(householdId);
+    // ストアが自動更新されるため fetchInventory は不要
   };
 
   /** 買い物リストに追加 */

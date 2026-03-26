@@ -186,6 +186,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
   updateInventoryQuantity: async (productId, newQuantity, minThreshold) => {
     const stockStatus = calculateStockStatus(newQuantity, minThreshold);
 
+    // データベースを更新
     await supabase
       .from('inventory')
       .update({
@@ -194,6 +195,15 @@ export const useProductStore = create<ProductState>((set, get) => ({
         updated_at: new Date().toISOString(),
       })
       .eq('product_id', productId);
+
+    // ストアの状態も即座に更新（再フェッチ不要）
+    set((state) => ({
+      inventoryItems: state.inventoryItems.map((item) =>
+        item.product_id === productId
+          ? { ...item, current_quantity: newQuantity, stock_status: stockStatus }
+          : item
+      ),
+    }));
   },
 
   addCategory: async (householdId, name, sortOrder) => {

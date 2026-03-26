@@ -8,6 +8,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { useProductStore } from '@/stores/productStore';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { NumberWheelPicker } from '@/components/common/NumberWheelPicker';
 import toast from 'react-hot-toast';
 
 /** まとめて追加時の1行データ */
@@ -307,12 +308,12 @@ export function ProductFormPage() {
           <label className="block text-sm font-medium text-gray-700 mb-1">
             在庫不足の閾値（この数以下で「少ない」と表示）
           </label>
-          <input
-            type="number"
+          <NumberWheelPicker
             value={minStockThreshold}
-            onChange={(e) => setMinStockThreshold(Number(e.target.value))}
+            onChange={setMinStockThreshold}
             min={0}
-            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            max={20}
+            label="在庫不足の閾値を選択"
           />
         </div>
 
@@ -320,12 +321,12 @@ export function ProductFormPage() {
         {!isEdit && !bulkMode && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">初期在庫数</label>
-            <input
-              type="number"
+            <NumberWheelPicker
               value={initialQuantity}
-              onChange={(e) => setInitialQuantity(Number(e.target.value))}
+              onChange={setInitialQuantity}
               min={0}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              max={50}
+              label="初期在庫数を選択"
             />
           </div>
         )}
@@ -352,33 +353,39 @@ export function ProductFormPage() {
             </label>
 
             {bulkItems.map((item, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <span className="text-xs text-gray-400 w-5 text-right flex-shrink-0">
-                  {index + 1}
-                </span>
-                <input
-                  type="text"
-                  value={item.name}
-                  onChange={(e) => updateBulkItem(index, 'name', e.target.value)}
-                  placeholder="商品名"
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-                <input
-                  type="number"
-                  value={item.initialQuantity}
-                  onChange={(e) => updateBulkItem(index, 'initialQuantity', Math.max(0, Number(e.target.value)))}
-                  min={0}
-                  className="w-16 px-2 py-2 border border-gray-300 rounded-lg text-sm text-center focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                  title="初期在庫数"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeBulkRow(index)}
-                  disabled={bulkItems.length <= 1}
-                  className="p-1.5 text-gray-300 hover:text-red-500 disabled:opacity-20"
-                >
-                  <Trash2 size={16} />
-                </button>
+              <div key={index} className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-400 w-5 text-right flex-shrink-0">
+                    {index + 1}
+                  </span>
+                  <input
+                    type="text"
+                    value={item.name}
+                    onChange={(e) => updateBulkItem(index, 'name', e.target.value)}
+                    placeholder="商品名"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeBulkRow(index)}
+                    disabled={bulkItems.length <= 1}
+                    className="p-1.5 text-gray-300 hover:text-red-500 disabled:opacity-20"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+                <div className="flex items-center gap-2 pl-7">
+                  <span className="text-xs text-gray-500 whitespace-nowrap w-16">初期在庫:</span>
+                  <div className="flex-1">
+                    <NumberWheelPicker
+                      value={item.initialQuantity}
+                      onChange={(val) => updateBulkItem(index, 'initialQuantity', val)}
+                      min={0}
+                      max={50}
+                      label="初期在庫数を選択"
+                    />
+                  </div>
+                </div>
               </div>
             ))}
 

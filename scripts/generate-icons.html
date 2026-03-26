@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PantryGo アイコン生成</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f9fafb;
+    }
+    h1 {
+      color: #10b981;
+    }
+    .canvas-container {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin: 20px 0;
+    }
+    canvas {
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      background: white;
+    }
+    button {
+      background: #10b981;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 5px;
+    }
+    button:hover {
+      background: #059669;
+    }
+    .info {
+      background: #e0f2fe;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>🏠 PantryGo アイコン生成ツール</h1>
+
+  <div class="info">
+    <p><strong>使い方：</strong></p>
+    <ol>
+      <li>「アイコンを生成」ボタンをクリック</li>
+      <li>各アイコンを右クリックして「名前を付けて画像を保存」</li>
+      <li>ファイル名を指定の名前で保存</li>
+      <li>保存した画像を <code>public/</code> フォルダに配置</li>
+    </ol>
+  </div>
+
+  <button onclick="generateIcons()">アイコンを生成</button>
+
+  <div class="canvas-container" id="canvasContainer"></div>
+
+  <script>
+    function generateIcons() {
+      const container = document.getElementById('canvasContainer');
+      container.innerHTML = '';
+
+      const icons = [
+        { size: 192, name: 'icon-192.png', maskable: false },
+        { size: 512, name: 'icon-512.png', maskable: false },
+        { size: 192, name: 'icon-maskable-192.png', maskable: true },
+        { size: 512, name: 'icon-maskable-512.png', maskable: true },
+        { size: 180, name: 'apple-touch-icon.png', maskable: false },
+      ];
+
+      icons.forEach(icon => {
+        const canvas = document.createElement('canvas');
+        canvas.width = icon.size;
+        canvas.height = icon.size;
+        const ctx = canvas.getContext('2d');
+
+        // 背景
+        ctx.fillStyle = '#10b981';
+        ctx.fillRect(0, 0, icon.size, icon.size);
+
+        // maskableの場合はセーフエリアを考慮
+        const padding = icon.maskable ? icon.size * 0.2 : icon.size * 0.1;
+        const iconSize = icon.size - padding * 2;
+
+        // 絵文字を描画
+        ctx.font = `${iconSize * 0.7}px "Segoe UI Emoji", "Apple Color Emoji", sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = 'white';
+        ctx.fillText('🏠', icon.size / 2, icon.size / 2);
+
+        // ラベル
+        const label = document.createElement('div');
+        label.textContent = icon.name;
+        label.style.textAlign = 'center';
+        label.style.marginTop = '10px';
+        label.style.fontSize = '12px';
+        label.style.color = '#666';
+
+        const wrapper = document.createElement('div');
+        wrapper.appendChild(canvas);
+        wrapper.appendChild(label);
+        container.appendChild(wrapper);
+
+        // ダウンロードボタン
+        const downloadBtn = document.createElement('button');
+        downloadBtn.textContent = `${icon.name} をダウンロード`;
+        downloadBtn.style.display = 'block';
+        downloadBtn.style.margin = '10px auto';
+        downloadBtn.style.fontSize = '12px';
+        downloadBtn.style.padding = '8px 16px';
+        downloadBtn.onclick = () => {
+          const link = document.createElement('a');
+          link.download = icon.name;
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+        };
+        wrapper.appendChild(downloadBtn);
+      });
+    }
+  </script>
+</body>
+</html>

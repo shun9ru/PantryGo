@@ -4,7 +4,7 @@
  */
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingCart, Minus, Plus, Filter, Tag, Check } from 'lucide-react';
+import { ShoppingCart, Minus, Plus, Filter, Tag, Check, Search } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { useProductStore } from '@/stores/productStore';
 import { useShoppingStore } from '@/stores/shoppingStore';
@@ -24,6 +24,7 @@ export function InventoryPage() {
   const { inventoryItems, fetchInventory, updateInventoryQuantity, categories, storageLocations, fetchCategories, fetchStorageLocations, loading } = useProductStore();
   const { items: shoppingItems, addItem, fetchItems: fetchShoppingItems } = useShoppingStore();
 
+  const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StockStatus | ''>('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
@@ -53,10 +54,11 @@ export function InventoryPage() {
 
   // フィルタ
   const filtered = inventoryItems.filter((item) => {
+    const matchSearch = !searchQuery || item.product.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchStatus = !statusFilter || item.stock_status === statusFilter;
     const matchCategory = !categoryFilter || item.product.category_id === categoryFilter;
     const matchLocation = !locationFilter || item.product.storage_location === locationFilter;
-    return matchStatus && matchCategory && matchLocation;
+    return matchSearch && matchStatus && matchCategory && matchLocation;
   });
 
   /** 在庫数を変更 */
@@ -108,7 +110,19 @@ export function InventoryPage() {
       <PageHeader title="在庫管理" />
 
       {/* フィルタエリア */}
-      <div className="bg-white border-b border-gray-100 space-y-2 px-4 py-2">
+      <div className="bg-white border-b border-gray-100 space-y-2 px-4 py-3">
+        {/* 検索バー */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="商品を検索..."
+            className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          />
+        </div>
+
         {/* 在庫状態フィルタ */}
         <div className="flex gap-2">
           <button

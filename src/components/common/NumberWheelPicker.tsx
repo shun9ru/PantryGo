@@ -65,12 +65,20 @@ export function NumberWheelPicker({
 
       {/* モーダル */}
       {isOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center sm:justify-center">
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md sm:mx-4 pb-safe">
-            {/* ヘッダー */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+        <div className="fixed inset-0 bg-black/50 z-[100] flex items-end sm:items-center sm:justify-center">
+          {/* 背景クリックで閉じる */}
+          <div
+            className="absolute inset-0"
+            onClick={() => setIsOpen(false)}
+          />
+
+          {/* モーダルコンテンツ */}
+          <div className="relative bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md sm:mx-4 max-h-[80vh] flex flex-col">
+            {/* ヘッダー（固定） */}
+            <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-gray-200 rounded-t-2xl">
               <h3 className="text-lg font-semibold text-gray-900">{label}</h3>
               <button
+                type="button"
                 onClick={() => setIsOpen(false)}
                 className="p-1 text-gray-400 hover:text-gray-600"
               >
@@ -78,8 +86,8 @@ export function NumberWheelPicker({
               </button>
             </div>
 
-            {/* ピッカー */}
-            <div className="relative h-64 overflow-hidden">
+            {/* ピッカー（スクロール可能） */}
+            <div className="flex-shrink-0 relative h-64 overflow-hidden">
               {/* 選択インジケーター */}
               <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-12 border-y-2 border-emerald-600 pointer-events-none z-10 bg-emerald-50/30" />
 
@@ -126,11 +134,12 @@ export function NumberWheelPicker({
               `}</style>
             </div>
 
-            {/* 決定ボタン */}
-            <div className="px-4 py-3">
+            {/* 決定ボタン（固定） */}
+            <div className="flex-shrink-0 border-t border-gray-100 px-4 py-3 pb-safe bg-white rounded-b-2xl">
               <button
+                type="button"
                 onClick={handleConfirm}
-                className="w-full py-3 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 transition-colors"
+                className="w-full py-3 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 active:bg-emerald-800 transition-colors touch-manipulation"
               >
                 決定
               </button>

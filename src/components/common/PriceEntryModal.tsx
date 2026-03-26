@@ -139,18 +139,19 @@ export function PriceEntryModal({
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
       {/* モーダル本体 */}
-      <div className="relative bg-white w-full max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[85vh] overflow-y-auto">
-        {/* ヘッダー */}
-        <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between rounded-t-2xl">
+      <div className="relative bg-white w-full max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[85vh] flex flex-col">
+        {/* ヘッダー（固定） */}
+        <div className="flex-shrink-0 bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between rounded-t-2xl">
           <h2 className="text-base font-bold text-gray-900">
             価格・店舗を登録
           </h2>
-          <button onClick={onClose} className="p-1 text-gray-400">
+          <button type="button" onClick={onClose} className="p-1 text-gray-400">
             <X size={20} />
           </button>
         </div>
 
-        <div className="p-4 space-y-4">
+        {/* スクロール可能なコンテンツ */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {/* 商品名 */}
           <div className="bg-emerald-50 rounded-lg px-3 py-2">
             <p className="text-sm font-medium text-emerald-800">{productName}</p>
@@ -271,18 +272,22 @@ export function PriceEntryModal({
 
           {/* 行追加ボタン */}
           <button
+            type="button"
             onClick={addRow}
             className="w-full flex items-center justify-center gap-1.5 py-2 border-2 border-dashed border-gray-300 text-gray-400 rounded-lg text-sm hover:border-emerald-400 hover:text-emerald-600"
           >
             <Plus size={16} />
             店舗・価格を追加
           </button>
+        </div>
 
-          {/* 登録ボタン */}
+        {/* 登録ボタン（固定） */}
+        <div className="flex-shrink-0 border-t border-gray-100 px-4 py-3 pb-safe bg-white rounded-b-2xl">
           <button
+            type="button"
             onClick={handleSubmit}
             disabled={submitting || entries.every((e) => !e.price)}
-            className="w-full py-3 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+            className="w-full py-3 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-50 transition-colors touch-manipulation"
           >
             {submitting ? '登録中...' : `${entries.filter((e) => e.price).length}件を登録する`}
           </button>

@@ -630,9 +630,12 @@ export function ShoppingListPage() {
                   if (filterCategoryId && p.category_id !== filterCategoryId) {
                     return false;
                   }
-                  // 保管場所フィルタ
-                  if (filterLocationId && p.storage_location !== filterLocationId) {
-                    return false;
+                  // 保管場所フィルタ（storage_locationは名前で保存されている）
+                  if (filterLocationId) {
+                    const selectedLocation = storageLocations.find(loc => loc.id === filterLocationId);
+                    if (selectedLocation && p.storage_location !== selectedLocation.name) {
+                      return false;
+                    }
                   }
                   return true;
                 })
@@ -661,7 +664,10 @@ export function ShoppingListPage() {
               {products.filter((p) => {
                 if (productSearch && !p.name.toLowerCase().includes(productSearch.toLowerCase())) return false;
                 if (filterCategoryId && p.category_id !== filterCategoryId) return false;
-                if (filterLocationId && p.storage_location !== filterLocationId) return false;
+                if (filterLocationId) {
+                  const selectedLocation = storageLocations.find(loc => loc.id === filterLocationId);
+                  if (selectedLocation && p.storage_location !== selectedLocation.name) return false;
+                }
                 return true;
               }).length === 0 && (
                 <div className="px-4 py-8 text-center text-gray-500 text-sm">

@@ -129,7 +129,7 @@ export function ShoppingListPage() {
     if (success) {
       setNewItemName('');
       setNewItemMemo('');
-      setShowAddForm(false);
+      // フォームは閉じずに連続入力可能に
       toast.success('追加しました');
     }
   };
@@ -449,14 +449,58 @@ export function ShoppingListPage() {
           </div>
         )
       ) : tab === 'manual' ? (
-        manualItems.length === 0 ? (
-          <EmptyState
-            icon={ShoppingBag}
-            title="その他の買い物リストは空です"
-            description="右上の「+」ボタンから手動で追加できます"
-          />
-        ) : (
-          <div className="pb-24">
+        <div className="pb-24">
+          {/* 直接入力フォーム */}
+          <div className="bg-emerald-50 border-b-2 border-emerald-200 px-4 py-3 space-y-2">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newItemName}
+                onChange={(e) => setNewItemName(e.target.value)}
+                placeholder="品名を入力してEnterで追加"
+                className="flex-1 px-3 py-2 border border-emerald-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && newItemName.trim()) {
+                    handleAddManual();
+                  }
+                }}
+              />
+              <button
+                onClick={handleAddManual}
+                disabled={!newItemName.trim()}
+                className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium disabled:opacity-50 whitespace-nowrap"
+              >
+                追加
+              </button>
+            </div>
+            <input
+              type="text"
+              value={newItemMemo}
+              onChange={(e) => setNewItemMemo(e.target.value)}
+              placeholder="メモ（任意）"
+              className="w-full px-3 py-2 border border-emerald-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+            />
+            <div className="flex gap-2">
+              {(['high', 'medium', 'low'] as const).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setNewPriority(p)}
+                  className={`px-3 py-1 rounded text-xs font-medium ${
+                    newPriority === p ? 'bg-emerald-600 text-white' : 'bg-white text-gray-600 border border-emerald-200'
+                  }`}
+                >
+                  {p === 'high' ? '高' : p === 'medium' ? '中' : '低'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* リスト */}
+          {manualItems.length === 0 ? (
+            <div className="px-4 py-8 text-center text-gray-500 text-sm">
+              上のフォームから項目を追加してください
+            </div>
+          ) : (
             <div className="divide-y divide-gray-100">
               {manualItems.map((item) => {
                 const isChecked = checkedItems.has(item.id);
@@ -592,10 +636,11 @@ export function ShoppingListPage() {
             </div>
           </div>
         )
-      ) : purchasedItems.length === 0 ? (
-        <EmptyState title="購入済みの項目はありません" />
-      ) : (
-        <div className="divide-y divide-gray-100">
+      ) : tab === 'purchased' ? (
+        purchasedItems.length === 0 ? (
+          <EmptyState title="購入済みの項目はありません" />
+        ) : (
+          <div className="divide-y divide-gray-100">
           {purchasedItems.map((item) => (
             <div key={item.id} className="bg-white px-4 py-3 opacity-60">
               <div className="flex items-center gap-3">
@@ -614,8 +659,9 @@ export function ShoppingListPage() {
               </div>
             </div>
           ))}
-        </div>
-      )}
+          </div>
+        )
+      ) : null}
 
       {/* チェックがある場合のフローティング登録バー */}
       {checkedCount > 0 && (tab === 'inventory' || tab === 'manual') && (

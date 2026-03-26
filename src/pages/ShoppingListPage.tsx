@@ -634,8 +634,8 @@ export function ShoppingListPage() {
                 );
               })}
             </div>
-          </div>
-        )
+          )}
+        </div>
       ) : tab === 'purchased' ? (
         purchasedItems.length === 0 ? (
           <EmptyState title="購入済みの項目はありません" />

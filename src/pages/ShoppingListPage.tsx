@@ -10,6 +10,8 @@ import {
   ShoppingBag,
   ShoppingCart,
   X,
+  Receipt,
+  Search,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { useShoppingStore } from '@/stores/shoppingStore';
@@ -20,6 +22,7 @@ import { PriorityBadge } from '@/components/common/PriorityBadge';
 import { EmptyState } from '@/components/common/EmptyState';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { NumberWheelPicker } from '@/components/common/NumberWheelPicker';
+import { PriceEntryModal } from '@/components/common/PriceEntryModal';
 import { getTodayString } from '@/utils/helpers';
 import { calcPriceWithoutTax } from '@/utils/constants';
 import type { ShoppingPriority, ShoppingListItemWithDetails } from '@/types/database';
@@ -40,7 +43,7 @@ export function ShoppingListPage() {
   const { householdId, user } = useAuthStore();
   const { items, fetchItems, addManualItem, markAsPurchased, deleteItem, loading } = useShoppingStore();
   const { stores, fetchStores, recordPurchase } = usePurchaseStore();
-  const { fetchInventory } = useProductStore();
+  const { products, fetchProducts, fetchInventory } = useProductStore();
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [newItemName, setNewItemName] = useState('');
@@ -56,11 +59,18 @@ export function ShoppingListPage() {
   const [batchStoreName, setBatchStoreName] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  // 購入を追加
+  const [showProductSelect, setShowProductSelect] = useState(false);
+  const [productSearch, setProductSearch] = useState('');
+  const [selectedProduct, setSelectedProduct] = useState<{ id: string; name: string; minThreshold: number } | null>(null);
+  const [showPriceEntry, setShowPriceEntry] = useState(false);
+
   useEffect(() => {
     if (!householdId) return;
     fetchItems(householdId);
     fetchStores(householdId);
-  }, [householdId, fetchItems, fetchStores]);
+    fetchProducts(householdId);
+  }, [householdId, fetchItems, fetchStores, fetchProducts]);
 
   const pendingItems = items.filter((i) => i.status === 'pending');
   const purchasedItems = items.filter((i) => i.status === 'purchased');
@@ -185,12 +195,22 @@ export function ShoppingListPage() {
       <PageHeader
         title="買い物リスト"
         rightAction={
-          <button
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="p-2 text-emerald-600"
-          >
-            <Plus size={22} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowProductSelect(true)}
+              className="p-2 text-emerald-600"
+              title="購入を追加"
+            >
+              <Receipt size={22} />
+            </button>
+            <button
+              onClick={() => setShowAddForm(!showAddForm)}
+              className="p-2 text-emerald-600"
+              title="手動追加"
+            >
+              <Plus size={22} />
+            </button>
+          </div>
         }
       />
 
@@ -539,6 +559,93 @@ export function ShoppingListPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* 商品選択モーダル */}
+      {showProductSelect && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setShowProductSelect(false)} />
+          <div className="relative bg-white w-full max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[90vh] flex flex-col">
+            {/* ヘッダー */}
+            <div className="flex-shrink-0 bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between rounded-t-2xl">
+              <h2 className="text-base font-bold text-gray-900">
+                購入する商品を選択
+              </h2>
+              <button type="button" onClick={() => setShowProductSelect(false)} className="p-1 text-gray-400">
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* 検索バー */}
+            <div className="flex-shrink-0 px-4 py-3 border-b border-gray-100">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                <input
+                  type="text"
+                  value={productSearch}
+                  onChange={(e) => setProductSearch(e.target.value)}
+                  placeholder="商品を検索..."
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+            </div>
+
+            {/* 商品リスト */}
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              {products
+                .filter((p) => p.name.toLowerCase().includes(productSearch.toLowerCase()))
+                .map((product) => (
+                  <button
+                    key={product.id}
+                    onClick={() => {
+                      setSelectedProduct({
+                        id: product.id,
+                        name: product.name,
+                        minThreshold: 1, // デフォルト値
+                      });
+                      setShowProductSelect(false);
+                      setShowPriceEntry(true);
+                    }}
+                    className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 border-b border-gray-100 text-left"
+                  >
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900">{product.name}</p>
+                      {product.category && (
+                        <p className="text-xs text-gray-500 mt-0.5">{product.category.name}</p>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              {products.filter((p) => p.name.toLowerCase().includes(productSearch.toLowerCase())).length === 0 && (
+                <div className="px-4 py-8 text-center text-gray-500 text-sm">
+                  商品が見つかりません
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 購入情報入力モーダル */}
+      {selectedProduct && (
+        <PriceEntryModal
+          open={showPriceEntry}
+          onClose={() => {
+            setShowPriceEntry(false);
+            setSelectedProduct(null);
+          }}
+          onComplete={async () => {
+            if (householdId) {
+              await fetchInventory(householdId);
+              toast.success('購入を登録しました');
+            }
+          }}
+          productId={selectedProduct.id}
+          productName={selectedProduct.name}
+          householdId={householdId || ''}
+          userId={user?.id || null}
+          minStockThreshold={selectedProduct.minThreshold}
+        />
       )}
     </div>
   );

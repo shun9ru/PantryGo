@@ -10,7 +10,6 @@ import {
   ShoppingBag,
   ShoppingCart,
   X,
-  Store,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { useShoppingStore } from '@/stores/shoppingStore';

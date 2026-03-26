@@ -5,7 +5,8 @@
 import { useState, useEffect } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
 import { usePurchaseStore } from '@/stores/purchaseStore';
-import { getTodayString } from '@/utils/helpers';
+import { getTodayString, cn } from '@/utils/helpers';
+import { calcPriceWithoutTax } from '@/utils/constants';
 import type { Store } from '@/types/database';
 
 /** 1行分の入力データ */
@@ -14,6 +15,7 @@ interface PriceEntry {
   store_name: string;
   price: string;
   is_sale: boolean;
+  is_tax_included: boolean;
 }
 
 const emptyEntry = (): PriceEntry => ({
@@ -21,6 +23,7 @@ const emptyEntry = (): PriceEntry => ({
   store_name: '',
   price: '',
   is_sale: false,
+  is_tax_included: false,
 });
 
 interface PriceEntryModalProps {
@@ -105,13 +108,18 @@ export function PriceEntryModal({
     setSubmitting(true);
 
     for (const entry of validEntries) {
+      // 税込価格の場合は税抜に変換
+      const priceWithoutTax = entry.is_tax_included
+        ? calcPriceWithoutTax(Number(entry.price))
+        : Number(entry.price);
+
       await recordPurchase({
         household_id: householdId,
         product_id: productId,
         store_id: entry.store_id || null,
         store_name: !entry.store_id && entry.store_name ? entry.store_name : null,
         purchase_date: purchaseDate,
-        price: Number(entry.price),
+        price: priceWithoutTax,
         quantity: 1,
         is_sale: entry.is_sale,
         memo: null,
@@ -205,20 +213,49 @@ export function PriceEntryModal({
                   />
                 )}
 
-                {/* 価格 + セール */}
+                {/* 価格 */}
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">¥</span>
+                  <input
+                    type="number"
+                    value={entry.price}
+                    onChange={(e) => updateEntry(index, 'price', e.target.value)}
+                    min={0}
+                    placeholder="0"
+                    className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+
+                {/* 税込・税抜 + セール */}
                 <div className="flex items-center gap-2">
-                  <div className="flex-1 relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">¥</span>
-                    <input
-                      type="number"
-                      value={entry.price}
-                      onChange={(e) => updateEntry(index, 'price', e.target.value)}
-                      min={0}
-                      placeholder="0"
-                      className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    />
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-gray-500">税:</span>
+                    <button
+                      type="button"
+                      onClick={() => updateEntry(index, 'is_tax_included', false)}
+                      className={cn(
+                        'px-2 py-0.5 rounded text-xs font-medium',
+                        !entry.is_tax_included
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-gray-100 text-gray-600'
+                      )}
+                    >
+                      税抜
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateEntry(index, 'is_tax_included', true)}
+                      className={cn(
+                        'px-2 py-0.5 rounded text-xs font-medium',
+                        entry.is_tax_included
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-gray-100 text-gray-600'
+                      )}
+                    >
+                      税込
+                    </button>
                   </div>
-                  <label className="flex items-center gap-1.5 text-xs text-gray-600 whitespace-nowrap">
+                  <label className="flex items-center gap-1.5 text-xs text-gray-600 whitespace-nowrap ml-auto">
                     <input
                       type="checkbox"
                       checked={entry.is_sale}

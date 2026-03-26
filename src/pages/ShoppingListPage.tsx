@@ -20,7 +20,9 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { PriorityBadge } from '@/components/common/PriorityBadge';
 import { EmptyState } from '@/components/common/EmptyState';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import { NumberWheelPicker } from '@/components/common/NumberWheelPicker';
 import { getTodayString } from '@/utils/helpers';
+import { calcPriceWithoutTax } from '@/utils/constants';
 import type { ShoppingPriority, ShoppingListItemWithDetails } from '@/types/database';
 import toast from 'react-hot-toast';
 import { cn } from '@/utils/helpers';
@@ -32,6 +34,7 @@ interface CheckedItemData {
   store_id: string;
   store_name: string;
   is_sale: boolean;
+  is_tax_included: boolean;
 }
 
 export function ShoppingListPage() {
@@ -50,6 +53,8 @@ export function ShoppingListPage() {
   // まとめて登録モーダル
   const [showBatchModal, setShowBatchModal] = useState(false);
   const [batchDate, setBatchDate] = useState(getTodayString());
+  const [batchStoreId, setBatchStoreId] = useState('');
+  const [batchStoreName, setBatchStoreName] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -74,6 +79,7 @@ export function ShoppingListPage() {
         store_id: '',
         store_name: '',
         is_sale: false,
+        is_tax_included: false,
       });
     }
     setCheckedItems(newMap);
@@ -135,13 +141,24 @@ export function ShoppingListPage() {
       if (item.product_id && data.price && Number(data.price) >= 0) {
         // 商品の閾値を取得（デフォルト1）
         const minThreshold = 1; // 簡易的にデフォルト値を使用
+        // 税込価格の場合は税抜に変換
+        const priceWithoutTax = data.is_tax_included
+          ? calcPriceWithoutTax(Number(data.price))
+          : Number(data.price);
+
+        // 店舗はモーダルで選択したものを使用（個別設定があればそちらを優先）
+        const finalStoreId = data.store_id || batchStoreId || null;
+        const finalStoreName = !finalStoreId && (data.store_name || batchStoreName)
+          ? (data.store_name || batchStoreName)
+          : null;
+
         await recordPurchase({
           household_id: householdId,
           product_id: item.product_id,
-          store_id: data.store_id || null,
-          store_name: !data.store_id && data.store_name ? data.store_name : null,
+          store_id: finalStoreId,
+          store_name: finalStoreName,
           purchase_date: batchDate,
-          price: Number(data.price),
+          price: priceWithoutTax,
           quantity: data.quantity,
           is_sale: data.is_sale,
           memo: null,
@@ -304,15 +321,17 @@ export function ShoppingListPage() {
                       <div className="mt-2 ml-10 space-y-2">
                         <div className="flex items-center gap-2">
                           {/* 数量 */}
-                          <div className="flex items-center gap-1">
-                            <label className="text-xs text-gray-500">数量</label>
-                            <input
-                              type="number"
-                              value={checkedData.quantity}
-                              onChange={(e) => updateCheckedData(item.id, 'quantity', Math.max(1, Number(e.target.value)))}
-                              min={1}
-                              className="w-16 px-2 py-1 border border-gray-300 rounded text-sm text-center focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                            />
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <label className="text-xs text-gray-500 whitespace-nowrap">数量</label>
+                            <div className="w-20">
+                              <NumberWheelPicker
+                                value={checkedData.quantity}
+                                onChange={(val) => updateCheckedData(item.id, 'quantity', val)}
+                                min={1}
+                                max={50}
+                                label="購入数量を選択"
+                              />
+                            </div>
                           </div>
 
                           {/* 価格 */}
@@ -330,9 +349,40 @@ export function ShoppingListPage() {
                               />
                             </div>
                           </div>
+                        </div>
+
+                        {/* 税込・税抜切替 */}
+                        <div className="flex items-center gap-2">
+                          <label className="text-xs text-gray-500">税:</label>
+                          <div className="flex gap-1">
+                            <button
+                              type="button"
+                              onClick={() => updateCheckedData(item.id, 'is_tax_included', false)}
+                              className={cn(
+                                'px-2 py-0.5 rounded text-xs font-medium',
+                                !checkedData.is_tax_included
+                                  ? 'bg-emerald-600 text-white'
+                                  : 'bg-gray-100 text-gray-600'
+                              )}
+                            >
+                              税抜
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => updateCheckedData(item.id, 'is_tax_included', true)}
+                              className={cn(
+                                'px-2 py-0.5 rounded text-xs font-medium',
+                                checkedData.is_tax_included
+                                  ? 'bg-emerald-600 text-white'
+                                  : 'bg-gray-100 text-gray-600'
+                              )}
+                            >
+                              税込
+                            </button>
+                          </div>
 
                           {/* セール */}
-                          <label className="flex items-center gap-1 text-xs text-gray-500">
+                          <label className="flex items-center gap-1 text-xs text-gray-500 ml-auto">
                             <input
                               type="checkbox"
                               checked={checkedData.is_sale}
@@ -343,29 +393,6 @@ export function ShoppingListPage() {
                           </label>
                         </div>
 
-                        {/* 店舗 */}
-                        <div className="flex items-center gap-1">
-                          <Store size={12} className="text-gray-400 flex-shrink-0" />
-                          <select
-                            value={checkedData.store_id}
-                            onChange={(e) => updateCheckedData(item.id, 'store_id', e.target.value)}
-                            className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white"
-                          >
-                            <option value="">店舗を選択（任意）</option>
-                            {stores.map((s) => (
-                              <option key={s.id} value={s.id}>{s.name}</option>
-                            ))}
-                          </select>
-                        </div>
-                        {!checkedData.store_id && (
-                          <input
-                            type="text"
-                            value={checkedData.store_name}
-                            onChange={(e) => updateCheckedData(item.id, 'store_name', e.target.value)}
-                            placeholder="新しい店舗名（任意）"
-                            className="w-full ml-4 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                          />
-                        )}
                       </div>
                     )}
                   </div>
@@ -418,9 +445,9 @@ export function ShoppingListPage() {
       {showBatchModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
           <div className="absolute inset-0 bg-black/40" onClick={() => setShowBatchModal(false)} />
-          <div className="relative bg-white w-full max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[85vh] overflow-y-auto">
+          <div className="relative bg-white w-full max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[85vh] flex flex-col">
             {/* ヘッダー */}
-            <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between rounded-t-2xl">
+            <div className="flex-shrink-0 bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between rounded-t-2xl">
               <h2 className="text-base font-bold text-gray-900">
                 購入登録の確認
               </h2>
@@ -429,7 +456,32 @@ export function ShoppingListPage() {
               </button>
             </div>
 
-            <div className="p-4 space-y-4">
+            {/* スクロール可能なコンテンツ */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {/* 店舗選択（共通） */}
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">店舗</label>
+                <select
+                  value={batchStoreId}
+                  onChange={(e) => setBatchStoreId(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                >
+                  <option value="">新しい店舗を入力</option>
+                  {stores.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+                {!batchStoreId && (
+                  <input
+                    type="text"
+                    value={batchStoreName}
+                    onChange={(e) => setBatchStoreName(e.target.value)}
+                    placeholder="店舗名を入力"
+                    className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                )}
+              </div>
+
               {/* 購入日 */}
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">購入日</label>
@@ -446,9 +498,18 @@ export function ShoppingListPage() {
                 {Array.from(checkedItems.entries()).map(([itemId, data]) => {
                   const item = pendingItems.find((i) => i.id === itemId);
                   if (!item) return null;
-                  const storeName = data.store_id
-                    ? stores.find((s) => s.id === data.store_id)?.name
-                    : data.store_name || null;
+
+                  // 店舗名の決定（個別設定 > 共通設定）
+                  let displayStoreName = null;
+                  if (data.store_id) {
+                    displayStoreName = stores.find((s) => s.id === data.store_id)?.name;
+                  } else if (data.store_name) {
+                    displayStoreName = data.store_name;
+                  } else if (batchStoreId) {
+                    displayStoreName = stores.find((s) => s.id === batchStoreId)?.name;
+                  } else if (batchStoreName) {
+                    displayStoreName = batchStoreName;
+                  }
 
                   return (
                     <div key={itemId} className="bg-gray-50 rounded-lg p-3">
@@ -457,8 +518,8 @@ export function ShoppingListPage() {
                         <span className="text-xs text-gray-500">×{data.quantity}</span>
                       </div>
                       <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
-                        {data.price && <span>¥{Number(data.price).toLocaleString()}</span>}
-                        {storeName && <span>@ {storeName}</span>}
+                        {data.price && <span>¥{Number(data.price).toLocaleString()}{data.is_tax_included ? '(税込)' : ''}</span>}
+                        {displayStoreName && <span>@ {displayStoreName}</span>}
                         {data.is_sale && <span className="text-red-500">セール</span>}
                         {!data.price && !item.product_id && <span>購入済みにマーク</span>}
                         {!data.price && item.product_id && <span>価格未入力（在庫のみ加算）</span>}
@@ -468,7 +529,10 @@ export function ShoppingListPage() {
                 })}
               </div>
 
-              {/* 登録ボタン */}
+            </div>
+
+            {/* 登録ボタン（固定） */}
+            <div className="flex-shrink-0 border-t border-gray-100 px-4 py-3 bg-white rounded-b-2xl">
               <button
                 onClick={handleBatchPurchase}
                 disabled={submitting}

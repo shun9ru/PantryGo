@@ -68,3 +68,16 @@ export const DEFAULT_CATEGORIES = [
 
 /** ページサイズ（一覧表示のデフォルト件数） */
 export const PAGE_SIZE = 50;
+
+/** 消費税率（10%） */
+export const TAX_RATE = 0.1;
+
+/** 税込価格から税抜価格を計算 */
+export const calcPriceWithoutTax = (priceWithTax: number): number => {
+  return Math.round(priceWithTax / (1 + TAX_RATE));
+};
+
+/** 税抜価格から税込価格を計算 */
+export const calcPriceWithTax = (priceWithoutTax: number): number => {
+  return Math.round(priceWithoutTax * (1 + TAX_RATE));
+};

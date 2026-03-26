@@ -444,7 +444,7 @@ export function ShoppingListPage() {
       {showBatchModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
           <div className="absolute inset-0 bg-black/40" onClick={() => setShowBatchModal(false)} />
-          <div className="relative bg-white w-full max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[90vh] flex flex-col">
+          <div className="relative bg-white w-full max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[85vh] flex flex-col">
             {/* ヘッダー */}
             <div className="flex-shrink-0 bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between rounded-t-2xl">
               <h2 className="text-base font-bold text-gray-900">
@@ -456,7 +456,7 @@ export function ShoppingListPage() {
             </div>
 
             {/* スクロール可能なコンテンツ */}
-            <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 min-h-0 overflow-y-auto p-4 pb-2 space-y-4">
               {/* 店舗選択（共通） */}
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">店舗</label>
@@ -531,7 +531,7 @@ export function ShoppingListPage() {
             </div>
 
             {/* 登録ボタン（固定） */}
-            <div className="sticky bottom-0 flex-shrink-0 border-t border-gray-100 px-4 py-3 bg-white rounded-b-2xl safe-area-bottom">
+            <div className="sticky bottom-0 z-10 flex-shrink-0 border-t border-gray-100 px-4 py-3 bg-white rounded-b-2xl safe-area-bottom shadow-[0_-2px_8px_rgba(0,0,0,0.08)]">
               <button
                 type="button"
                 onClick={handleBatchPurchase}

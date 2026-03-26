@@ -48,7 +48,7 @@ export function ShoppingListPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newItemName, setNewItemName] = useState('');
   const [newPriority, setNewPriority] = useState<ShoppingPriority>('medium');
-  const [tab, setTab] = useState<'pending' | 'purchased'>('pending');
+  const [tab, setTab] = useState<'inventory' | 'manual' | 'purchased'>('inventory');
 
   // チェック済みアイテムの管理 (itemId -> データ)
   const [checkedItems, setCheckedItems] = useState<Map<string, CheckedItemData>>(new Map());
@@ -76,7 +76,10 @@ export function ShoppingListPage() {
     fetchStorageLocations(householdId);
   }, [householdId, fetchItems, fetchStores, fetchProducts, fetchCategories, fetchStorageLocations]);
 
-  const pendingItems = items.filter((i) => i.status === 'pending');
+  // 在庫管理ベース（product_idあり）
+  const inventoryItems = items.filter((i) => i.status === 'pending' && i.product_id);
+  // その他・突発的（product_idなし）
+  const manualItems = items.filter((i) => i.status === 'pending' && !i.product_id);
   const purchasedItems = items.filter((i) => i.status === 'purchased');
   const checkedCount = checkedItems.size;
 
@@ -146,8 +149,9 @@ export function ShoppingListPage() {
     if (!householdId || checkedCount === 0) return;
     setSubmitting(true);
 
+    const allPendingItems = [...inventoryItems, ...manualItems];
     for (const [itemId, data] of checkedItems.entries()) {
-      const item = pendingItems.find((i) => i.id === itemId);
+      const item = allPendingItems.find((i) => i.id === itemId);
       if (!item) continue;
 
       // 商品紐付けありで価格入力がある場合のみ購入履歴を作成
@@ -256,14 +260,24 @@ export function ShoppingListPage() {
       {/* タブ切替 */}
       <div className="flex bg-white border-b border-gray-200">
         <button
-          onClick={() => setTab('pending')}
+          onClick={() => setTab('inventory')}
           className={`flex-1 py-2.5 text-sm font-medium border-b-2 ${
-            tab === 'pending'
+            tab === 'inventory'
               ? 'border-emerald-600 text-emerald-600'
               : 'border-transparent text-gray-400'
           }`}
         >
-          未購入 ({pendingItems.length})
+          在庫管理 ({inventoryItems.length})
+        </button>
+        <button
+          onClick={() => setTab('manual')}
+          className={`flex-1 py-2.5 text-sm font-medium border-b-2 ${
+            tab === 'manual'
+              ? 'border-emerald-600 text-emerald-600'
+              : 'border-transparent text-gray-400'
+          }`}
+        >
+          その他 ({manualItems.length})
         </button>
         <button
           onClick={() => setTab('purchased')}
@@ -280,17 +294,161 @@ export function ShoppingListPage() {
       {/* リスト */}
       {loading ? (
         <LoadingSpinner />
-      ) : tab === 'pending' ? (
-        pendingItems.length === 0 ? (
+      ) : tab === 'inventory' ? (
+        inventoryItems.length === 0 ? (
           <EmptyState
             icon={ShoppingBag}
-            title="買い物リストは空です"
-            description="在庫画面や商品詳細から追加できます"
+            title="在庫管理の買い物リストは空です"
+            description="在庫画面から在庫が少ない商品を追加できます"
           />
         ) : (
           <div className="pb-24">
             <div className="divide-y divide-gray-100">
-              {pendingItems.map((item) => {
+              {inventoryItems.map((item) => {
+                const isChecked = checkedItems.has(item.id);
+                const checkedData = checkedItems.get(item.id);
+
+                return (
+                  <div key={item.id} className={cn(
+                    'bg-white px-4 py-3',
+                    isChecked && 'bg-emerald-50/50'
+                  )}>
+                    <div className="flex items-center gap-3">
+                      {/* チェックボタン */}
+                      <button
+                        onClick={() => toggleCheck(item)}
+                        className={cn(
+                          'w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-full border-2 transition-colors',
+                          isChecked
+                            ? 'border-emerald-500 bg-emerald-500 text-white'
+                            : 'border-gray-300 text-gray-300 hover:border-emerald-400'
+                        )}
+                      >
+                        <Check size={14} />
+                      </button>
+
+                      {/* アイテム情報 */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className={cn(
+                            'text-sm font-medium truncate',
+                            isChecked ? 'text-emerald-800' : 'text-gray-900'
+                          )}>
+                            {item.item_name}
+                          </p>
+                          <PriorityBadge priority={item.priority} />
+                        </div>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          {item.planned_store?.name && `${item.planned_store.name} ・ `}
+                          {item.memo && item.memo}
+                        </p>
+                      </div>
+
+                      {/* 削除 */}
+                      <button
+                        onClick={() => handleDelete(item.id)}
+                        className="p-1.5 text-gray-300 hover:text-red-500"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+
+                    {/* チェック時：数量・価格・店舗入力エリア */}
+                    {isChecked && checkedData && (
+                      <div className="mt-2 ml-10 space-y-2">
+                        <div className="flex items-center gap-2">
+                          {/* 数量 */}
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <label className="text-xs text-gray-500 whitespace-nowrap">数量</label>
+                            <div className="w-20">
+                              <NumberWheelPicker
+                                value={checkedData.quantity}
+                                onChange={(val) => updateCheckedData(item.id, 'quantity', val)}
+                                min={1}
+                                max={50}
+                                label="購入数量を選択"
+                              />
+                            </div>
+                          </div>
+
+                          {/* 価格 */}
+                          <div className="flex items-center gap-1 flex-1">
+                            <label className="text-xs text-gray-500">価格</label>
+                            <div className="relative flex-1">
+                              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">¥</span>
+                              <input
+                                type="number"
+                                value={checkedData.price}
+                                onChange={(e) => updateCheckedData(item.id, 'price', e.target.value)}
+                                min={0}
+                                placeholder="任意"
+                                className="w-full pl-6 pr-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 税込・税抜切替 */}
+                        <div className="flex items-center gap-2">
+                          <label className="text-xs text-gray-500">税:</label>
+                          <div className="flex gap-1">
+                            <button
+                              type="button"
+                              onClick={() => updateCheckedData(item.id, 'is_tax_included', false)}
+                              className={cn(
+                                'px-2 py-0.5 rounded text-xs font-medium',
+                                !checkedData.is_tax_included
+                                  ? 'bg-emerald-600 text-white'
+                                  : 'bg-gray-100 text-gray-600'
+                              )}
+                            >
+                              税抜
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => updateCheckedData(item.id, 'is_tax_included', true)}
+                              className={cn(
+                                'px-2 py-0.5 rounded text-xs font-medium',
+                                checkedData.is_tax_included
+                                  ? 'bg-emerald-600 text-white'
+                                  : 'bg-gray-100 text-gray-600'
+                              )}
+                            >
+                              税込
+                            </button>
+                          </div>
+
+                          {/* セール */}
+                          <label className="flex items-center gap-1 text-xs text-gray-500 ml-auto">
+                            <input
+                              type="checkbox"
+                              checked={checkedData.is_sale}
+                              onChange={(e) => updateCheckedData(item.id, 'is_sale', e.target.checked)}
+                              className="w-3.5 h-3.5 text-emerald-600 rounded"
+                            />
+                            特売
+                          </label>
+                        </div>
+
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )
+      ) : tab === 'manual' ? (
+        manualItems.length === 0 ? (
+          <EmptyState
+            icon={ShoppingBag}
+            title="その他の買い物リストは空です"
+            description="右上の「+」ボタンから手動で追加できます"
+          />
+        ) : (
+          <div className="pb-24">
+            <div className="divide-y divide-gray-100">
+              {manualItems.map((item) => {
                 const isChecked = checkedItems.has(item.id);
                 const checkedData = checkedItems.get(item.id);
 
@@ -450,7 +608,7 @@ export function ShoppingListPage() {
       )}
 
       {/* チェックがある場合のフローティング登録バー */}
-      {checkedCount > 0 && tab === 'pending' && (
+      {checkedCount > 0 && (tab === 'inventory' || tab === 'manual') && (
         <div className="fixed bottom-20 left-0 right-0 z-40 px-4">
           <div className="max-w-lg mx-auto">
             <button
@@ -527,7 +685,8 @@ export function ShoppingListPage() {
               {/* チェック済みアイテム一覧 */}
               <div className="space-y-2">
                 {Array.from(checkedItems.entries()).map(([itemId, data]) => {
-                  const item = pendingItems.find((i) => i.id === itemId);
+                  const allPendingItems = [...inventoryItems, ...manualItems];
+                  const item = allPendingItems.find((i) => i.id === itemId);
                   if (!item) return null;
 
                   // 店舗名の決定（個別設定 > 共通設定）

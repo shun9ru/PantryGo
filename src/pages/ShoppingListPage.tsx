@@ -47,6 +47,7 @@ export function ShoppingListPage() {
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [newItemName, setNewItemName] = useState('');
+  const [newItemMemo, setNewItemMemo] = useState('');
   const [newPriority, setNewPriority] = useState<ShoppingPriority>('medium');
   const [tab, setTab] = useState<'inventory' | 'manual' | 'purchased'>('inventory');
 
@@ -121,12 +122,13 @@ export function ShoppingListPage() {
       household_id: householdId,
       item_name: newItemName.trim(),
       priority: newPriority,
-      memo: null,
+      memo: newItemMemo.trim() || null,
       added_by: user?.id ?? null,
     });
 
     if (success) {
       setNewItemName('');
+      setNewItemMemo('');
       setShowAddForm(false);
       toast.success('追加しました');
     }
@@ -224,24 +226,32 @@ export function ShoppingListPage() {
 
       {/* 手動追加フォーム */}
       {showAddForm && (
-        <div className="px-4 py-3 bg-white border-b border-gray-100">
+        <div className="px-4 py-3 bg-white border-b border-gray-100 space-y-2">
           <div className="flex gap-2">
             <input
               type="text"
               value={newItemName}
               onChange={(e) => setNewItemName(e.target.value)}
-              placeholder="追加したいもの"
+              placeholder="品名"
               className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
               onKeyDown={(e) => e.key === 'Enter' && handleAddManual()}
             />
             <button
               onClick={handleAddManual}
-              className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium"
+              disabled={!newItemName.trim()}
+              className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium disabled:opacity-50"
             >
               追加
             </button>
           </div>
-          <div className="flex gap-2 mt-2">
+          <input
+            type="text"
+            value={newItemMemo}
+            onChange={(e) => setNewItemMemo(e.target.value)}
+            placeholder="メモ（任意）"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          />
+          <div className="flex gap-2">
             {(['high', 'medium', 'low'] as const).map((p) => (
               <button
                 key={p}

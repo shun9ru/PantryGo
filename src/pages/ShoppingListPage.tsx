@@ -86,6 +86,13 @@ export function ShoppingListPage() {
 
   /** アイテムのチェックをトグル */
   const toggleCheck = (item: ShoppingListItemWithDetails) => {
+    // その他タブの場合は即座に購入済みにマーク
+    if (!item.product_id) {
+      handleMarkAsPurchased(item.id);
+      return;
+    }
+
+    // 在庫管理タブの場合は従来通り
     const newMap = new Map(checkedItems);
     if (newMap.has(item.id)) {
       newMap.delete(item.id);
@@ -100,6 +107,13 @@ export function ShoppingListPage() {
       });
     }
     setCheckedItems(newMap);
+  };
+
+  /** 購入済みにマーク（その他タブ用） */
+  const handleMarkAsPurchased = async (itemId: string) => {
+    await markAsPurchased(itemId, user?.id ?? null);
+    if (householdId) fetchItems(householdId);
+    toast.success('購入済みにしました');
   };
 
   /** チェック済みアイテムのデータを更新 */
@@ -363,85 +377,6 @@ export function ShoppingListPage() {
                       </button>
                     </div>
 
-                    {/* チェック時：数量・価格・店舗入力エリア */}
-                    {isChecked && checkedData && (
-                      <div className="mt-2 ml-10 space-y-2">
-                        <div className="flex items-center gap-2">
-                          {/* 数量 */}
-                          <div className="flex items-center gap-1 flex-shrink-0">
-                            <label className="text-xs text-gray-500 whitespace-nowrap">数量</label>
-                            <div className="w-20">
-                              <NumberWheelPicker
-                                value={checkedData.quantity}
-                                onChange={(val) => updateCheckedData(item.id, 'quantity', val)}
-                                min={1}
-                                max={50}
-                                label="購入数量を選択"
-                              />
-                            </div>
-                          </div>
-
-                          {/* 価格 */}
-                          <div className="flex items-center gap-1 flex-1">
-                            <label className="text-xs text-gray-500">価格</label>
-                            <div className="relative flex-1">
-                              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">¥</span>
-                              <input
-                                type="number"
-                                value={checkedData.price}
-                                onChange={(e) => updateCheckedData(item.id, 'price', e.target.value)}
-                                min={0}
-                                placeholder="任意"
-                                className="w-full pl-6 pr-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* 税込・税抜切替 */}
-                        <div className="flex items-center gap-2">
-                          <label className="text-xs text-gray-500">税:</label>
-                          <div className="flex gap-1">
-                            <button
-                              type="button"
-                              onClick={() => updateCheckedData(item.id, 'is_tax_included', false)}
-                              className={cn(
-                                'px-2 py-0.5 rounded text-xs font-medium',
-                                !checkedData.is_tax_included
-                                  ? 'bg-emerald-600 text-white'
-                                  : 'bg-gray-100 text-gray-600'
-                              )}
-                            >
-                              税抜
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => updateCheckedData(item.id, 'is_tax_included', true)}
-                              className={cn(
-                                'px-2 py-0.5 rounded text-xs font-medium',
-                                checkedData.is_tax_included
-                                  ? 'bg-emerald-600 text-white'
-                                  : 'bg-gray-100 text-gray-600'
-                              )}
-                            >
-                              税込
-                            </button>
-                          </div>
-
-                          {/* セール */}
-                          <label className="flex items-center gap-1 text-xs text-gray-500 ml-auto">
-                            <input
-                              type="checkbox"
-                              checked={checkedData.is_sale}
-                              onChange={(e) => updateCheckedData(item.id, 'is_sale', e.target.checked)}
-                              className="w-3.5 h-3.5 text-emerald-600 rounded"
-                            />
-                            特売
-                          </label>
-                        </div>
-
-                      </div>
-                    )}
                   </div>
                 );
               })}
@@ -663,8 +598,8 @@ export function ShoppingListPage() {
         )
       ) : null}
 
-      {/* チェックがある場合のフローティング登録バー */}
-      {checkedCount > 0 && (tab === 'inventory' || tab === 'manual') && (
+      {/* チェックがある場合のフローティング登録バー（在庫管理タブのみ） */}
+      {checkedCount > 0 && tab === 'inventory' && (
         <div className="fixed bottom-20 left-0 right-0 z-40 px-4">
           <div className="max-w-lg mx-auto">
             <button

@@ -73,7 +73,7 @@ export function NumberWheelPicker({
           />
 
           {/* モーダルコンテンツ */}
-          <div className="relative bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md sm:mx-4 max-h-[80vh] flex flex-col">
+          <div className="relative bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md sm:mx-4 max-h-[90vh] flex flex-col">
             {/* ヘッダー（固定） */}
             <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-gray-200 rounded-t-2xl">
               <h3 className="text-lg font-semibold text-gray-900">{label}</h3>
@@ -87,7 +87,7 @@ export function NumberWheelPicker({
             </div>
 
             {/* ピッカー（スクロール可能） */}
-            <div className="flex-shrink-0 relative h-64 overflow-hidden">
+            <div className="flex-shrink-0 min-h-0 relative h-64 overflow-hidden">
               {/* 選択インジケーター */}
               <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-12 border-y-2 border-emerald-600 pointer-events-none z-10 bg-emerald-50/30" />
 
@@ -135,11 +135,11 @@ export function NumberWheelPicker({
             </div>
 
             {/* 決定ボタン（固定） */}
-            <div className="flex-shrink-0 border-t border-gray-100 px-4 py-3 pb-safe bg-white rounded-b-2xl">
+            <div className="sticky bottom-0 flex-shrink-0 border-t border-gray-100 px-4 py-3 bg-white rounded-b-2xl safe-area-bottom">
               <button
                 type="button"
                 onClick={handleConfirm}
-                className="w-full py-3 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 active:bg-emerald-800 transition-colors touch-manipulation"
+                className="w-full py-3 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 active:bg-emerald-800 transition-colors touch-manipulation text-base"
               >
                 決定
               </button>

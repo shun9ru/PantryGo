@@ -444,19 +444,19 @@ export function ShoppingListPage() {
       {showBatchModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
           <div className="absolute inset-0 bg-black/40" onClick={() => setShowBatchModal(false)} />
-          <div className="relative bg-white w-full max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[85vh] flex flex-col">
+          <div className="relative bg-white w-full max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[90vh] flex flex-col">
             {/* ヘッダー */}
             <div className="flex-shrink-0 bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between rounded-t-2xl">
               <h2 className="text-base font-bold text-gray-900">
                 購入登録の確認
               </h2>
-              <button onClick={() => setShowBatchModal(false)} className="p-1 text-gray-400">
+              <button type="button" onClick={() => setShowBatchModal(false)} className="p-1 text-gray-400">
                 <X size={20} />
               </button>
             </div>
 
             {/* スクロール可能なコンテンツ */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
               {/* 店舗選択（共通） */}
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">店舗</label>
@@ -531,11 +531,12 @@ export function ShoppingListPage() {
             </div>
 
             {/* 登録ボタン（固定） */}
-            <div className="flex-shrink-0 border-t border-gray-100 px-4 py-3 bg-white rounded-b-2xl">
+            <div className="sticky bottom-0 flex-shrink-0 border-t border-gray-100 px-4 py-3 bg-white rounded-b-2xl safe-area-bottom">
               <button
+                type="button"
                 onClick={handleBatchPurchase}
                 disabled={submitting}
-                className="w-full py-3 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+                className="w-full py-3 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-50 transition-colors touch-manipulation text-base"
               >
                 {submitting ? '登録中...' : `${checkedCount}件を登録する`}
               </button>

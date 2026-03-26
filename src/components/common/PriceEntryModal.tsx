@@ -139,7 +139,7 @@ export function PriceEntryModal({
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
       {/* モーダル本体 */}
-      <div className="relative bg-white w-full max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[85vh] flex flex-col">
+      <div className="relative bg-white w-full max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[90vh] flex flex-col">
         {/* ヘッダー（固定） */}
         <div className="flex-shrink-0 bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between rounded-t-2xl">
           <h2 className="text-base font-bold text-gray-900">
@@ -151,7 +151,7 @@ export function PriceEntryModal({
         </div>
 
         {/* スクロール可能なコンテンツ */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
           {/* 商品名 */}
           <div className="bg-emerald-50 rounded-lg px-3 py-2">
             <p className="text-sm font-medium text-emerald-800">{productName}</p>
@@ -282,12 +282,12 @@ export function PriceEntryModal({
         </div>
 
         {/* 登録ボタン（固定） */}
-        <div className="flex-shrink-0 border-t border-gray-100 px-4 py-3 pb-safe bg-white rounded-b-2xl">
+        <div className="sticky bottom-0 flex-shrink-0 border-t border-gray-100 px-4 py-3 bg-white rounded-b-2xl safe-area-bottom">
           <button
             type="button"
             onClick={handleSubmit}
             disabled={submitting || entries.every((e) => !e.price)}
-            className="w-full py-3 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-50 transition-colors touch-manipulation"
+            className="w-full py-3 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-50 transition-colors touch-manipulation text-base"
           >
             {submitting ? '登録中...' : `${entries.filter((e) => e.price).length}件を登録する`}
           </button>

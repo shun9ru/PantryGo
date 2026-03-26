@@ -43,7 +43,7 @@ export function ShoppingListPage() {
   const { householdId, user } = useAuthStore();
   const { items, fetchItems, addManualItem, markAsPurchased, deleteItem, loading } = useShoppingStore();
   const { stores, fetchStores, recordPurchase } = usePurchaseStore();
-  const { products, fetchProducts, fetchInventory } = useProductStore();
+  const { products, categories, storageLocations, fetchProducts, fetchCategories, fetchStorageLocations, fetchInventory } = useProductStore();
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [newItemName, setNewItemName] = useState('');
@@ -62,6 +62,8 @@ export function ShoppingListPage() {
   // 購入を追加
   const [showProductSelect, setShowProductSelect] = useState(false);
   const [productSearch, setProductSearch] = useState('');
+  const [filterCategoryId, setFilterCategoryId] = useState<string>('');
+  const [filterLocationId, setFilterLocationId] = useState<string>('');
   const [selectedProduct, setSelectedProduct] = useState<{ id: string; name: string; minThreshold: number } | null>(null);
   const [showPriceEntry, setShowPriceEntry] = useState(false);
 
@@ -70,7 +72,9 @@ export function ShoppingListPage() {
     fetchItems(householdId);
     fetchStores(householdId);
     fetchProducts(householdId);
-  }, [householdId, fetchItems, fetchStores, fetchProducts]);
+    fetchCategories(householdId);
+    fetchStorageLocations(householdId);
+  }, [householdId, fetchItems, fetchStores, fetchProducts, fetchCategories, fetchStorageLocations]);
 
   const pendingItems = items.filter((i) => i.status === 'pending');
   const purchasedItems = items.filter((i) => i.status === 'purchased');
@@ -578,7 +582,7 @@ export function ShoppingListPage() {
 
             {/* 検索バー */}
             <div className="flex-shrink-0 px-4 py-3 border-b border-gray-100">
-              <div className="relative">
+              <div className="relative mb-3">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <input
                   type="text"
@@ -588,12 +592,50 @@ export function ShoppingListPage() {
                   className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
+
+              {/* フィルタ */}
+              <div className="flex gap-2">
+                <select
+                  value={filterCategoryId}
+                  onChange={(e) => setFilterCategoryId(e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                >
+                  <option value="">すべてのカテゴリ</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
+                <select
+                  value={filterLocationId}
+                  onChange={(e) => setFilterLocationId(e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                >
+                  <option value="">すべての保管場所</option>
+                  {storageLocations.map((loc) => (
+                    <option key={loc.id} value={loc.id}>{loc.name}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             {/* 商品リスト */}
             <div className="flex-1 min-h-0 overflow-y-auto">
               {products
-                .filter((p) => p.name.toLowerCase().includes(productSearch.toLowerCase()))
+                .filter((p) => {
+                  // 検索フィルタ
+                  if (productSearch && !p.name.toLowerCase().includes(productSearch.toLowerCase())) {
+                    return false;
+                  }
+                  // カテゴリフィルタ
+                  if (filterCategoryId && p.category_id !== filterCategoryId) {
+                    return false;
+                  }
+                  // 保管場所フィルタ
+                  if (filterLocationId && p.storage_location !== filterLocationId) {
+                    return false;
+                  }
+                  return true;
+                })
                 .map((product) => (
                   <button
                     key={product.id}
@@ -616,7 +658,12 @@ export function ShoppingListPage() {
                     </div>
                   </button>
                 ))}
-              {products.filter((p) => p.name.toLowerCase().includes(productSearch.toLowerCase())).length === 0 && (
+              {products.filter((p) => {
+                if (productSearch && !p.name.toLowerCase().includes(productSearch.toLowerCase())) return false;
+                if (filterCategoryId && p.category_id !== filterCategoryId) return false;
+                if (filterLocationId && p.storage_location !== filterLocationId) return false;
+                return true;
+              }).length === 0 && (
                 <div className="px-4 py-8 text-center text-gray-500 text-sm">
                   商品が見つかりません
                 </div>
